@@ -73,14 +73,23 @@ func initCBOREncMode() (en cbor.EncMode, err error) {
 func initCBORDecMode() (dm cbor.DecMode, err error) {
 	// Create a tag with SignMessage and tag number 98.
 	// When decoding CBOR data with tag number 98 to interface{}, cbor library returns SignMessage.
+	// Also, to support CoRIM meta, assign tag 32 to URI as per Appendix D of RFC8610.
+	tagsMap := map[uint64]interface{}{
+		32:                 TaggedURI(""),
+		SignMessageCBORTag: SignMessage{},
+	}
+
+	opts := cbor.TagOptions{
+		EncTag: cbor.EncTagRequired,
+		DecTag: cbor.DecTagRequired,
+	}
+
 	tags := cbor.NewTagSet()
-	err = tags.Add(
-		cbor.TagOptions{EncTag: cbor.EncTagRequired, DecTag: cbor.DecTagRequired},
-		reflect.TypeOf(SignMessage{}),
-		SignMessageCBORTag,
-	)
-	if err != nil {
-		return nil, err
+
+	for tag, typ := range tagsMap {
+		if err := tags.Add(opts, reflect.TypeOf(typ), tag); err != nil {
+			return nil, err
+		}
 	}
 
 	decOpt := cbor.DecOptions{
