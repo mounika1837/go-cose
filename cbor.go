@@ -62,15 +62,7 @@ var (
 	decMode, decModeError = initCBORDecMode()
 )
 
-func initCBOREncMode() (en cbor.EncMode, err error) {
-	encOpt := cbor.EncOptions{
-		IndefLength: cbor.IndefLengthForbidden, // no streaming
-		Sort:        cbor.SortCanonical,        // sort map keys
-	}
-	return encOpt.EncMode()
-}
-
-func initCBORDecMode() (dm cbor.DecMode, err error) {
+func tags() cbor.TagSet {
 	// Create a tag with SignMessage and tag number 98.
 	// When decoding CBOR data with tag number 98 to interface{}, cbor library returns SignMessage.
 	// Also, to support CoRIM meta, assign tag 32 to URI as per Appendix D of RFC8610.
@@ -88,15 +80,27 @@ func initCBORDecMode() (dm cbor.DecMode, err error) {
 
 	for tag, typ := range tagsMap {
 		if err := tags.Add(opts, reflect.TypeOf(typ), tag); err != nil {
-			return nil, err
+			panic(err)
 		}
 	}
 
+	return tags
+}
+
+func initCBOREncMode() (en cbor.EncMode, err error) {
+	encOpt := cbor.EncOptions{
+		IndefLength: cbor.IndefLengthForbidden, // no streaming
+		Sort:        cbor.SortCanonical,        // sort map keys
+	}
+	return encOpt.EncModeWithTags(tags())
+}
+
+func initCBORDecMode() (dm cbor.DecMode, err error) {
 	decOpt := cbor.DecOptions{
 		IndefLength: cbor.IndefLengthForbidden, // no streaming
 		IntDec:      cbor.IntDecConvertSigned,  // decode CBOR uint/int to Go int64
 	}
-	return decOpt.DecModeWithTags(tags)
+	return decOpt.DecModeWithTags(tags())
 }
 
 func init() {
