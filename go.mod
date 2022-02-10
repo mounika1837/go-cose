@@ -1,4 +1,4 @@
-module github.com/mounika1837/veraison/go-cose
+module github.com/veraison/go-cose
 
 go 1.15
 
